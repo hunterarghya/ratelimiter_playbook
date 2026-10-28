@@ -1,4 +1,4 @@
-.PHONY: up down demo inspect watch tools observe test lint
+.PHONY: up down demo inspect watch tools observe test lint chaos
 
 up:        ## make up P=gcra          start one project (+ redis)
 	docker compose --profile $(P) up --build -d
@@ -26,3 +26,6 @@ test:      ## make test P=rate_limiters/algorithms/05_gcra
 
 lint:
 	docker compose run --rm dev sh -c "ruff check . && python -m tools.run_mypy"
+
+chaos:     ## stop Redis mid-traffic and demonstrate fail-open/closed/fallback recovery
+	bash rate_limiters/policies/04_failure_modes/scripts/chaos.sh
