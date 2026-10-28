@@ -25,4 +25,4 @@ test:      ## make test P=rate_limiters/algorithms/05_gcra
 	docker compose run --rm dev pytest $(P)/tests -q
 
 lint:
-	docker compose run --rm dev sh -c "ruff check . && mypy rate_limiters"
+	docker compose run --rm dev sh -c "ruff check . && python -m tools.run_mypy"
