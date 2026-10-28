@@ -4,9 +4,11 @@ import hashlib
 import sys
 from pathlib import Path
 
-# Mapping of canonical file -> list of duplicate copies across projects
 CANONICAL_COPIES: dict[str, list[str]] = {
-    # Populated as projects in Phase 3/4 are built (e.g., GCRA Lua scripts)
+    "rate_limiters/algorithms/05_gcra/app/lua/gcra.lua": [
+        "rate_limiters/policies/04_failure_modes/app/lua/gcra.lua",
+        "rate_limiters/policies/05_shadow_mode/app/lua/gcra.lua",
+    ],
 }
 
 

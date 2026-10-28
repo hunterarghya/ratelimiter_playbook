@@ -8,6 +8,7 @@ on:
 
 jobs:
   lint:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +20,77 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
-      - name: Run ruff
+      - name: Run Ruff Linter
         run: ruff check .
-      - name: Run mypy
+      - name: Run Mypy Typechecker
         run: python -m tools.run_mypy
+
+  drift:
+    name: Canonical Duplicate Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check duplicate file drift
+        run: python tools/check_duplicates.py
+
+  test:
+    name: Unit & Algorithm Tests
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 2s
+          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - rate_limiters/algorithms/01_fixed_window
+          - rate_limiters/algorithms/02_sliding_window_log
+          - rate_limiters/algorithms/03_sliding_window_counter
+          - rate_limiters/algorithms/04_token_bucket
+          - rate_limiters/algorithms/05_gcra
+          - rate_limiters/algorithms/06_concurrency
+          - rate_limiters/policies/01_multi_rule
+          - rate_limiters/policies/02_identity_strategies
+          - rate_limiters/policies/03_weighted_cost
+          - rate_limiters/policies/04_failure_modes
+          - rate_limiters/policies/05_shadow_mode
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run Pytest
+        env:
+          REDIS_URL: redis://localhost:6379/0
+        run: pytest ${{ matrix.project }}/tests -v
+
+  contract:
+    name: Uniform HTTP Contract Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Start Redis and Gcra Subproject
+        run: |
+          docker compose --profile gcra up --build -d
+          sleep 5
+      - name: Run Contract Tests
+        run: |
+          docker compose run --rm dev pytest tests/contract --target-url http://gcra:8000 -v
