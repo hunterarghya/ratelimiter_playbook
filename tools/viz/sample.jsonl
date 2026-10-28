@@ -1,0 +1,6 @@
+{"t": 0.00, "req_num": 1, "status": 200, "headers": {"ratelimit-remaining": "3", "retry-after": "", "ratelimit-limit": "2", "x-redis-state": "TAT = +0.5s"}, "identity": "user:alice", "algorithm": "GCRA", "burst": 4}
+{"t": 0.01, "req_num": 2, "status": 200, "headers": {"ratelimit-remaining": "2", "retry-after": "", "ratelimit-limit": "2", "x-redis-state": "TAT = +1.0s"}, "identity": "user:alice", "algorithm": "GCRA", "burst": 4}
+{"t": 0.02, "req_num": 3, "status": 200, "headers": {"ratelimit-remaining": "1", "retry-after": "", "ratelimit-limit": "2", "x-redis-state": "TAT = +1.5s"}, "identity": "user:alice", "algorithm": "GCRA", "burst": 4}
+{"t": 0.03, "req_num": 4, "status": 200, "headers": {"ratelimit-remaining": "0", "retry-after": "", "ratelimit-limit": "2", "x-redis-state": "TAT = +2.0s"}, "identity": "user:alice", "algorithm": "GCRA", "burst": 4}
+{"t": 0.04, "req_num": 5, "status": 429, "headers": {"ratelimit-remaining": "0", "retry-after": "0.46s", "ratelimit-limit": "2", "x-redis-state": "TAT = +2.0s  (unchanged: denied costs nothing)"}, "identity": "user:alice", "algorithm": "GCRA", "burst": 4}
+{"t": 0.50, "req_num": 6, "status": 200, "headers": {"ratelimit-remaining": "0", "retry-after": "", "ratelimit-limit": "2", "x-redis-state": "TAT = +2.0s"}, "identity": "user:alice", "algorithm": "GCRA", "burst": 4}

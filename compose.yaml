@@ -1,0 +1,172 @@
+x-limiter-env: &limiter-env
+  REDIS_URL: redis://redis:6379/0
+  RL_DEBUG: "1"
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    volumes:
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  # ---------- algorithms ----------
+  fixed-window:
+    profiles: ["fixed-window"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/algorithms/01_fixed_window }
+    environment: *limiter-env
+    ports: ["8101:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  sliding-log:
+    profiles: ["sliding-log"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/algorithms/02_sliding_window_log }
+    environment: *limiter-env
+    ports: ["8102:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  sliding-counter:
+    profiles: ["sliding-counter"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/algorithms/03_sliding_window_counter }
+    environment: *limiter-env
+    ports: ["8103:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  token-bucket:
+    profiles: ["token-bucket"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/algorithms/04_token_bucket }
+    environment: *limiter-env
+    ports: ["8104:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  gcra:
+    profiles: ["gcra"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/algorithms/05_gcra }
+    environment: *limiter-env
+    ports: ["8105:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  concurrency:
+    profiles: ["concurrency"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/algorithms/06_concurrency }
+    environment: *limiter-env
+    ports: ["8106:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  # ---------- policies ----------
+  multi-rule:
+    profiles: ["multi-rule"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/policies/01_multi_rule }
+    environment: *limiter-env
+    ports: ["8201:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  identity:
+    profiles: ["identity"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/policies/02_identity_strategies }
+    environment: *limiter-env
+    ports: ["8202:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  weighted-cost:
+    profiles: ["weighted-cost"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/policies/03_weighted_cost }
+    environment: *limiter-env
+    ports: ["8203:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  failure-modes:
+    profiles: ["failure-modes"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/policies/04_failure_modes }
+    environment: *limiter-env
+    ports: ["8204:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  shadow-mode:
+    profiles: ["shadow-mode"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: { PROJECT: rate_limiters/policies/05_shadow_mode }
+    environment: *limiter-env
+    ports: ["8205:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+
+  # ---------- dev / tools ----------
+  dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    volumes:
+      - .:/workspace
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis: { condition: service_healthy }
+
+  redisinsight:
+    profiles: ["tools"]
+    image: redis/redisinsight:latest
+    ports: ["5540:5540"]
+
+  # ---------- observability ----------
+  prometheus:
+    profiles: ["observe"]
+    image: prom/prometheus:latest
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+
+  grafana:
+    profiles: ["observe"]
+    image: grafana/grafana:latest
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports: ["3000:3000"]
